@@ -1,0 +1,27 @@
+---
+title: "Data and libraries"
+author: "Tom Mushkat"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: kable
+    results: hide
+    theme: readable
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=FALSE, message=FALSE}
+pacman::p_load(tidyverse, here, skimr, anytime, car, effectsize, gmodels, apaTables, psych)
+
+# originalData <- read_csv(here('Data/trialData.csv'))
+ Data <- read_csv(here('Data/cleanData.csv'))
+
+
+```
+
