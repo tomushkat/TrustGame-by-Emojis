@@ -1,0 +1,197 @@
+---
+title: "Hypothesis testing"
+author: "Tom Mushkat"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: kable
+    results: hide
+    theme: readable
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# One-ways
+```{r, warning=FALSE, message=FALSE}
+
+Data$emConditionOneWayAmount <- as.factor(Data$emCondition)
+contrasts(Data$emConditionOneWayAmount)
+EMvsNoEM <- c(0.5, -1, 0.5)
+ManyVSSingle <- c(0.5, 0, -0.5)
+contrasts(Data$emConditionOneWayAmount) <- cbind(EMvsNoEM, ManyVSSingle)
+
+
+Data$emConditionOneWayTrust <- as.factor(Data$emCondition)
+contrasts(Data$emConditionOneWayTrust)
+ManyVSNo <- c(0.5, -0.5, 0)
+SinglevsOther <- c(-0.5, 1, -0.5)
+contrasts(Data$emConditionOneWayTrust) <- cbind(SinglevsOther, ManyVSNo)
+```
+
+## Amount
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  filter(Order == 'amountFirst') %>% 
+  group_by(emCondition) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2))
+
+Leven <- leveneTest(Data$Amount[Data$Order == 'amountFirst'] ~ Data$emConditionOneWayAmount[Data$Order == 'amountFirst'])  # car packages
+trueVarTest <- ifelse(Leven$`Pr(>F)`[1] > 0.05, TRUE, FALSE)
+Model <- aov(Amount ~ emConditionOneWayAmount, var.equal = trueVarTest, data = Data[Data$Order == 'amountFirst', ])
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+
+summary.lm(Model)
+
+
+
+Data %>% 
+  filter(Order == 'amountFirst') %>% 
+  ggplot(aes(x = emCondition, y = Amount, fill = emCondition)) + 
+    geom_bar(stat = 'summary', position = position_dodge()) +
+  geom_boxplot() + 
+  geom_violin() +
+  scale_fill_manual(values = c('darkgrey', 'lightgrey', 'lightgreen')) +
+  geom_jitter(aes(x = emCondition, y = Amount, fill = emCondition), color = 'blue') + 
+    stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), 
+               geom = "errorbar", color = "red", width = 0.2) +
+    stat_summary(fun.y = mean, geom = "point", color = "red") +
+    theme_classic() + ylab('Money') + xlab('Emoji level') + 
+    ggtitle('One-Way ANOVA bar plot: Money by Emoji') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+## Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  filter(Order == 'questionFirst') %>% 
+  group_by(emCondition) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+Leven <- leveneTest(Data$Trust[Data$Order == 'questionFirst'] ~ Data$emConditionOneWayTrust[Data$Order == 'questionFirst'])  # car packages
+trueVarTest <- ifelse(Leven$`Pr(>F)`[1] > 0.05, TRUE, FALSE)
+Model <- aov(Trust ~ emConditionOneWayTrust, var.equal = trueVarTest, data = Data[Data$Order == 'questionFirst', ])
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+
+summary.lm(Model)
+
+
+
+Data %>% 
+  filter(Order == 'questionFirst') %>% 
+  ggplot(aes(x = emCondition, y = Trust, fill = emCondition)) + 
+    geom_bar(stat = 'summary', position = position_dodge()) +
+  geom_boxplot() + 
+  geom_violin() +
+  scale_fill_manual(values = c('darkgrey', 'lightgrey', 'lightgreen')) +
+  geom_jitter(aes(x = emCondition, y = Trust, fill = emCondition), color = 'blue') + 
+    stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), 
+               geom = "errorbar", color = "red", width = 0.2) +
+    stat_summary(fun.y = mean, geom = "point", color = "red") +
+    theme_classic() + ylab('Trust') + xlab('Emoji level') + 
+    ggtitle('One-Way ANOVA bar plot: Trust by Emoji') +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+# Two-way
+## Amount
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(emCondition, Order) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2))
+Data$emCondition <- as.factor(Data$emCondition)
+levels(Data$emCondition) <- c('No', 'Single', 'Many')
+
+Leven1 <- leveneTest(Data$Amount ~ Data$emCondition)  # car packages
+Leven2 <- leveneTest(Data$Amount ~ Data$Order)  # car packages
+Leven3 <- leveneTest(Data$Amount ~ Data$emCondition:Data$Order)  # car packages
+
+trueVarTest <- ifelse(Leven1$`Pr(>F)`[1] < 0.05 | Leven2$`Pr(>F)`[1] < 0.05 | Leven3$`Pr(>F)`[1] < 0.05, TRUE, FALSE)
+Model <- aov(Amount ~ emCondition, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+
+Data %>% 
+  ggplot(aes(x = emCondition, y = Amount, fill = Order)) + 
+    geom_bar(stat = 'summary', position = position_dodge()) +
+  geom_boxplot(position = position_dodge(0.8)) + 
+  geom_violin(position = position_dodge(0.8)) +
+  scale_fill_manual(values = c('darkgrey', 'lightgrey')) +
+  # geom_jitter(aes(x = emCondition, y = Amount, fill = Order), color = 'blue') + 
+     stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), 
+               geom = "errorbar", color = "red", width = 0.2, position = position_dodge(0.8)) +
+    stat_summary(fun.y = mean, geom = "point", color = "red", position = position_dodge(0.8)) +
+    theme_classic() + ylab('Money') + xlab('Emoji level') + 
+    ggtitle('Two-Way ANOVA bar plot: Money by Emoji') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+Data %>% 
+  ggplot(aes(x = emCondition, y = Amount, fill = Order)) + 
+    stat_summary(aes(group = Order, color = Order), fun.y = "mean", geom = "line", 
+                 position = position_dodge(0.2)) + 
+    stat_summary(fun.y = "mean", geom = "point", aes(color = Order), 
+                 position = position_dodge(0.2)) + 
+    stat_summary(fun.data = mean_sdl, geom = "errorbar", aes(color = Order),
+                 position = position_dodge(0.2), width = 0.2) + 
+    theme_classic() + ylab('Money') + xlab('Emoji level') + 
+    ggtitle('Two-Way ANOVA: Money by Emoji * Order') + theme(plot.title = element_text(hjust = 0.5)) 
+
+```
+
+## Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(emCondition) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+Data$emCondition <- as.factor(Data$emCondition)
+levels(Data$emCondition) <- c('No', 'Single', 'Many')
+
+Leven1 <- leveneTest(Data$Trust ~ Data$emCondition)  # car packages
+Leven2 <- leveneTest(Data$Trust ~ Data$Order)  # car packages
+Leven3 <- leveneTest(Data$Trust ~ Data$emCondition:Data$Order)  # car packages
+
+trueVarTest <- ifelse(Leven1$`Pr(>F)`[1] < 0.05 | Leven2$`Pr(>F)`[1] < 0.05 | Leven3$`Pr(>F)`[1] < 0.05, TRUE, FALSE)
+Model <- aov(Trust ~ emCondition, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+
+
+
+Data %>% 
+  ggplot(aes(x = emCondition, y = Trust, fill = Order)) + 
+    geom_bar(stat = 'summary', position = position_dodge(0.8)) +
+  geom_boxplot(position = position_dodge(0.8)) + 
+  geom_violin(position = position_dodge(0.8)) +
+  scale_fill_manual(values = c('darkgrey', 'lightgrey')) +
+  # geom_jitter(aes(x = emCondition, y = Amount, fill = Order), color = 'blue') + 
+     stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), 
+               geom = "errorbar", color = "red", width = 0.2, position = position_dodge(0.8)) +
+    stat_summary(fun.y = mean, geom = "point", color = "red", position = position_dodge(0.8)) +
+    theme_classic() + ylab('Trust') + xlab('Emoji level') + 
+    ggtitle('Two-Way ANOVA bar plot: Trust by Emoji') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+Data %>% 
+  ggplot(aes(x = emCondition, y = Trust, fill = Order)) + 
+    stat_summary(aes(group = Order, color = Order), fun.y = "mean", geom = "line", 
+                 position = position_dodge(0.2)) + 
+    stat_summary(fun.y = "mean", geom = "point", aes(color = Order), 
+                 position = position_dodge(0.2)) + 
+    stat_summary(fun.data = mean_sdl, geom = "errorbar", aes(color = Order),
+                 position = position_dodge(0.2), width = 0.2) + 
+    theme_classic() + ylab('Trust') + xlab('Emoji level') + 
+    ggtitle('Two-Way ANOVA: Trust by Emoji * Order') + theme(plot.title = element_text(hjust = 0.5)) 
+
+```
+

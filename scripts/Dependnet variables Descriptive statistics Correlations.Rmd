@@ -1,0 +1,48 @@
+---
+title: 'Dependnet variables: Descriptive statistics Correlations'
+author: "Tom Mushkat"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: kable
+    results: hide
+    theme: readable
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+# Order
+```{r, warning=FALSE, message=FALSE}
+table(Data$Order)
+round(100 * table(Data$Order) / nrow(Data), 2)
+```
+# emCondition
+```{r, warning=FALSE, message=FALSE}
+table(Data$emCondition)
+round(100 * table(Data$emCondition) / nrow(Data), 2)
+```
+
+## Trust
+```{r, warning=FALSE, message=FALSE}
+skim(Data$Trust)
+```
+
+## Amount
+```{r, warning=FALSE, message=FALSE}
+skim(Data$Amount)
+```
+
+# Correlations
+```{r, warning=FALSE, message=FALSE}
+cor.test(Data$Trust, Data$Amount, method = 'pearson')
+```
+
+
+

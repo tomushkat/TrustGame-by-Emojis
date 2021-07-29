@@ -1,0 +1,405 @@
+---
+title: "Demographic characteristics"
+author: "Tom Mushkat"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: kable
+    results: hide
+    theme: readable
+    toc: TRUE
+    toc_float: TRUE
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Age
+## Descriptive statistics
+```{r, warning=FALSE, message=FALSE}
+skim(Data$Age)
+```
+
+## Correlations with Order
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(Order) %>% 
+  summarise(Mean = round(mean(Age), 2),
+            SD   = round(sd(Age), 2))
+
+varTest <- var.test(Age ~ Order, data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Age ~ Order, var.equal = trueVarTest, data = Data)
+Model
+```
+
+## Correlations with emCondition
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(emCondition) %>% 
+  summarise(Mean = round(mean(Age), 2),
+            SD   = round(sd(Age), 2))
+
+Leven <- leveneTest(Data$Age ~ Data$emCondition)  # car packages
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- aov(Age ~ emCondition, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+```
+
+```{r, warning=FALSE, message=FALSE}
+corData <- Data %>% 
+  select(Age, Amount, Trust)
+apa.cor.table(corData)
+```
+
+
+
+# Gender
+## Descriptive statistics
+```{r, warning=FALSE, message=FALSE}
+table(Data$Gender)
+round(100 * table(Data$Gender) / nrow(Data), 2)
+```
+
+## Correlations with emCondition
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$Gender[Data$Gender != 'Other'], Data$emCondition[Data$Gender != 'Other'], format = 'SPSS', chisq = T)
+```
+
+## Correlations with Order
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$Gender[Data$Gender != 'Other'], Data$Order[Data$Gender != 'Other'], format = 'SPSS', chisq = T)
+```
+
+## Correlations with Amount
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  filter(Gender != 'Other') %>% 
+  group_by(Gender) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2))
+
+varTest <- var.test(Amount ~ Gender, data = Data[Data$Gender != 'Other', ])
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Amount ~ Gender, var.equal = trueVarTest, data = Data[Data$Gender != 'Other', ])
+Model
+```
+
+## Correlations with Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  filter(Gender != 'Other') %>% 
+  group_by(Gender) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+varTest <- var.test(Trust ~ Gender, data = Data[Data$Gender != 'Other', ])
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Trust ~ Gender, var.equal = trueVarTest, data = Data[Data$Gender != 'Other', ])
+Model
+```
+
+# maritalStatus
+## Descriptive statistics
+```{r, warning=FALSE, message=FALSE}
+table(Data$maritalStatus)
+round(100 * table(Data$maritalStatus) / nrow(Data), 2)
+```
+
+## Correlations with emCondition
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$maritalStatus, Data$emCondition, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Order
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$maritalStatus, Data$Order, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Amount
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(maritalStatus) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2))
+
+Leven <- leveneTest(Data$Amount ~ Data$maritalStatus)  # car packages
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- aov(Amount ~ maritalStatus, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+```
+
+## Correlations with Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(maritalStatus) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+Leven <- leveneTest(Data$Trust ~ Data$maritalStatus)  # car packages
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- aov(Trust ~ maritalStatus, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+```
+
+# Parent
+## Descriptive statistics
+```{r, warning=FALSE, message=FALSE}
+table(Data$Parent)
+round(100 * table(Data$Parent) / nrow(Data), 2)
+```
+
+## Correlations with emCondition
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$Parent, Data$emCondition, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Order
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$Parent, Data$Order, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(Parent) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+varTest <- var.test(Trust ~ Parent, data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Trust ~ Parent, var.equal = trueVarTest, data = Data)
+Model
+```
+
+## Correlations with Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(Parent) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+varTest <- var.test(Trust ~ Parent, data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Trust ~ Parent, var.equal = trueVarTest, data = Data)
+Model
+```
+
+# Religion
+## Descriptive statistics
+```{r, warning=FALSE, message=FALSE}
+table(Data$Religion)
+round(100 * table(Data$Religion) / nrow(Data), 2)
+```
+
+## Correlations with emCondition
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$Religion, Data$emCondition, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Order
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$Religion, Data$Order, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(Religion) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+varTest <- var.test(Trust ~ Religion, data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Trust ~ Religion, var.equal = trueVarTest, data = Data)
+Model
+```
+
+## Correlations with Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(Religion) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+varTest <- var.test(Trust ~ Religion, data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Trust ~ Religion, var.equal = trueVarTest, data = Data)
+Model
+```
+
+# religionAffiliation
+## Descriptive statistics
+```{r, warning=FALSE, message=FALSE}
+table(Data$religionAffilation)
+round(100 * table(Data$religionAffilation) / nrow(Data), 2)
+```
+
+## Correlations with emCondition
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$religionAffiliation, Data$emCondition, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Order
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$religionAffiliation, Data$Order, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Amount
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(religionAffiliation) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2))
+
+Leven <- leveneTest(Data$Amount ~ Data$religionAffiliation)  # car packages
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- aov(Amount ~ religionAffiliation, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+```
+
+## Correlations with Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(religionAffiliation) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+Leven <- leveneTest(Data$Trust ~ Data$religionAffiliation)  # car packages
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- aov(Trust ~ religionAffiliation, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+```
+
+
+# Education
+## Descriptive statistics
+```{r, warning=FALSE, message=FALSE}
+table(Data$Education)
+round(100 * table(Data$Education) / nrow(Data), 2)
+```
+
+## Correlations with emCondition
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$Education, Data$emCondition, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Order
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$Education, Data$Order, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Amount
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(Education) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2))
+
+Leven <- leveneTest(Data$Amount ~ Data$Education)  # car packages
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- aov(Amount ~ Education, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+```
+
+## Correlations with Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(Education) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+Leven <- leveneTest(Data$Trust ~ Data$Education)  # car packages
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- aov(Trust ~ Education, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+```
+
+
+# Socioeconomic
+## Descriptive statistics
+```{r, warning=FALSE, message=FALSE}
+table(Data$Socioeconomic)
+round(100 * table(Data$Socioeconomic) / nrow(Data), 2)
+```
+
+## Correlations with emCondition
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$Socioeconomic, Data$emCondition, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Order
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$Socioeconomic, Data$Order, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Amount
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(Socioeconomic) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2))
+
+Leven <- leveneTest(Data$Amount ~ Data$Socioeconomic)  # car packages
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- aov(Amount ~ Socioeconomic, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+```
+
+## Correlations with Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(Socioeconomic) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+Leven <- leveneTest(Data$Trust ~ Data$Socioeconomic)  # car packages
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- aov(Trust ~ Socioeconomic, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+```
+
+# Political
+## Descriptive statistics
+```{r, warning=FALSE, message=FALSE}
+table(Data$Political)
+round(100 * table(Data$Political) / nrow(Data), 2)
+```
+
+## Correlations with emCondition
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$Political, Data$emCondition, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Order
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$Political, Data$Order, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Amount
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(Political) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2))
+
+Leven <- leveneTest(Data$Amount ~ Data$Political)  # car packages
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- aov(Amount ~ Political, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+```
+
+## Correlations with Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(Political) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+Leven <- leveneTest(Data$Trust ~ Data$Political)  # car packages
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- aov(Trust ~ Political, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+```
+
