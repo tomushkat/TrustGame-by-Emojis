@@ -1,0 +1,181 @@
+---
+title: "Regressions"
+author: "Tom Mushkat"
+date: "8/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Performing the model
+Using the **glm** command we can perform a logistic regression
+```{r, warning=FALSE, message=FALSE}
+
+Model <- kmeans(x = Data$Amount, centers = 2)
+Model
+Data$clusters <- Model$cluster
+Data$clusters <- ifelse(Data$clusters == 2, 0, Data$clusters)
+
+Data$emConditionOneWayAmount <- as.factor(Data$emCondition)
+contrasts(Data$emCondition)
+No <- c(0, 1, 0)
+Single <- c(0, 0, 1)
+contrasts(Data$emConditionOneWayAmount) <- cbind(No, Single)
+
+Data$emConditionOneWayTrust <- as.factor(Data$emCondition)
+contrasts(Data$emConditionOneWayTrust)
+EMvsNoEM <- c(0, 1, 0)
+ManyVSSingle <- c(1, 0, 0)
+contrasts(Data$emConditionOneWayTrust) <- cbind(EMvsNoEM, ManyVSSingle)
+
+regLog1 <- glm(clusters ~ emConditionOneWayAmount + mf, family = binomial('logit'), data = Data)
+summary(regLog1)
+```
+
+## Odss ratio
+Extracting the odds ratio
+```{r, warning=FALSE, message=FALSE}
+ORCI <- round(exp(cbind(coef(regLog1), confint(regLog1))), 2) 
+ORCI
+```
+
+## Testing the model's significancy
+### Chi-square value
+
+```{r, warning=FALSE, message=FALSE}
+cdiff  <- regLog1$null.deviance - regLog1$deviance
+round(cdiff, 2)
+```
+
+### Degress of freedom
+
+```{r, warning=FALSE, message=FALSE}
+dfdiff <- regLog1$df.null - regLog1$df.residual
+round(dfdiff, 2)
+```
+
+Using the **pchisq** command we can find the model's significance.
+### p value
+```{r, warning=FALSE, message=FALSE}
+round(pchisq(cdiff, dfdiff, lower.tail = FALSE), 100)
+```
+
+### Explained variance
+
+Using the **nagelkerke** command from the **rcompanion** package we can find the explained variance.
+```{r, warning=FALSE, message=FALSE}
+Nagelkerke <- nagelkerke(regLog1, null = NULL, restrictNobs = FALSE) # rcompanion package
+paste0(100 * round(Nagelkerke$Pseudo.R.squared.for.model.vs.null[3], 4), "%")
+```
+
+### Fit of the model - Holsem test
+Using the **hoslem.test** command from the **ResourceSelection** package we can find the model's fit.
+```{r, warning=FALSE, message=FALSE}
+hoslem.test(regLog1$y, fitted(regLog1), g = 10) # ResourceSelection package
+```
+
+
+# Model's probabilities
+We can extract the fitted values from the model, and then convert it to 1 and zero.
+We can change the threshold value, now the threshold is 0.5 (50%). 
+```{r, warning=FALSE, message=FALSE}
+Data$predicted_Probabilities <- regLog1$fitted.values
+round(head(Data$predicted_Probabilities, 100), 2)
+
+
+Data <- Data %>% 
+  mutate(binaryCorrect = ifelse(predicted_Probabilities > 0.5, 1, 0))  ## here you cange cahge the threshold 
+round(head(Data$binaryCorrect, 100), 2)
+table(Data$clusters) / sum(nrow(Data))
+```
+
+
+
+# Model's accuracy
+Using the **table** command we can create a confusion matrix, and examine the model's success at the classification.
+```{r, warning=FALSE, message=FALSE}
+Prediction <- table(Data$clusters, Data$binaryCorrect)
+dimnames(Prediction)[[1]] <- c('Reality - 0 (Negative)', 'Reality - 1 (Positive)')
+dimnames(Prediction)[[2]] <- c('Prediction - 0 (Negative)', 'Prediction - 1 (Positive)')
+
+Prediction # Frequencies 
+
+round(Prediction * 100 / sum(Prediction), 1) # Percentages
+```
+
+## Accuracy 
+
+$\frac{correctPredictions}{totalPrediction}$
+
+```{r, warning=FALSE, message=FALSE}
+paste0(round((Prediction[1, 1] + Prediction[2, 2]) / sum(Prediction) * 100, 2), "%")
+```
+
+## Sesitivity 
+
+$\frac{truePositive}{(truePositive + falseNegative)}$
+
+Sensitivity refers to the test's ability to correctly detect ltv greater than 0.
+
+```{r, warning=FALSE, message=FALSE}
+paste0(round(Prediction[2, 2] / (Prediction[2, 2] + Prediction[1, 1]) * 100, 2), "%")
+```
+
+## Specifisity 
+
+$\frac{trueNegative}{(trueNegative + falsePositive)}$
+
+Specificity relates to the test's ability to correctly reject ltv lower than 0.
+
+```{r, warning=FALSE, message=FALSE}
+paste0(round(Prediction[1, 1] / (Prediction[1, 1] + Prediction[1, 2]) * 100, 2), "%")
+```
+
+
+
+#LM
+## Detecting Multicoliniarity
+
+For detecting multicoliniarity we should first ran the model using the **lm** command.
+Than, using the **vif** command from the **faraway** package we can test whether there is any Variance Inflation Factor (VIF) greater than 10.
+As we can see, **daily wager group**  has VIF value greater than 10. Therefore, we should exclude it from the analysis.
+```{r, warning=FALSE, message=FALSE}
+Model <- lm(Trust ~ emConditionOneWayAmount + mf + Secular + Motives + Attitudes + emojiUse, data = Data) 
+
+vif(Model) # faraway package
+```
+
+### Detecting Heteroskedasticity using the bptest command
+
+```{r, warning=FALSE, message=FALSE}
+varTest <- bptest(Model)    # lmtest package
+regType <- ifelse(varTest$p.value < 0.05, 'HC2', 'classical')
+regType
+```
+
+
+## Performing linear regression
+
+```{r, warning=FALSE, message=FALSE}
+Model <- lm_robust(Trust ~ emConditionOneWayAmount + mf + Secular + Motives + Attitudes + emojiUse, se_type =  regType, data = Data)
+
+summary(Model)
+```
+
+
+### Standerlized beta coeff 
+As before we should conduct the model again.
+If you have characters as independent variables, we need to transform them to integers and than to into factors. 
+```{r, warning=FALSE, message=FALSE}
+scalednewData <- Data %>% 
+  mutate(Motives = scale(Motives),
+         Attitudes = scale(Attitudes),
+         emojiUse = scale(emojiUse),
+         Trust = scale(Trust))
+
+Model1 <- lm_robust(Trust ~ emConditionOneWayAmount + mf + Secular + Motives + Attitudes + emojiUse, se_type = regType, data = scalednewData) # estimatr package
+summary(Model1)
+
+```

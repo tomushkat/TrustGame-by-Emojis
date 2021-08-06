@@ -1,0 +1,99 @@
+---
+title: "Correlations DV with Controls"
+author: "Tom Mushkat"
+date: "8/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=FALSE, message=FALSE}
+# cor.test(Data$Amount, Data$emojiUse)
+# cor.test(Data$Amount, Data$Attitudes)
+# cor.test(Data$Amount, Data$Motives)
+apa.cor.table(as.matrix(cbind(Amount = Data$Amount, emojiUse = Data$emojiUse, Attitudes = Data$Attitudes, Motives = Data$Motives)))
+
+# cor.test(Data$Trust, Data$Amount)
+# cor.test(Data$Trust, Data$Attitudes)
+# cor.test(Data$Trust, Data$Motives)
+apa.cor.table(as.matrix(cbind(Trust = Data$Trust, emojiUse = Data$emojiUse, Attitudes = Data$Attitudes, Motives = Data$Motives)))
+
+cor.test(Data$Amount[Data$Order == 'amountFirst'], Data$Trust[Data$Order == 'amountFirst'])
+cor.test(Data$Amount[Data$Order == 'questionFirst'], Data$Trust[Data$Order == 'questionFirst'])
+
+
+```
+
+
+# Controls with binary anount
+
+
+## emojiUse
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(clusters) %>% 
+  summarise(Mean = round(mean(emojiUse), 2),
+            SD   = round(sd(emojiUse), 2),
+            N = length(emojiUse))
+
+varTest <- var.test(emojiUse ~ clusters, data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(emojiUse ~ clusters, var.equal = trueVarTest, data = Data)
+Model
+
+effectsize(Model)
+
+boxplot(Data$emojiUse ~ Data$clusters,
+  ylab = "emojiUse",
+  main = 'Clusters'
+)
+
+```
+
+## Attitudes
+
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(clusters) %>% 
+  summarise(Mean = round(mean(Attitudes), 2),
+            SD   = round(sd(Attitudes), 2),
+            N = length(Attitudes))
+
+varTest <- var.test(Attitudes ~ clusters, data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Attitudes ~ clusters, var.equal = trueVarTest, data = Data)
+Model
+
+effectsize(Model)
+
+boxplot(Data$Attitudes ~ Data$clusters,
+  ylab = "Attitudes",
+  main = 'Clusters'
+)
+
+```
+
+## Motives
+
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(clusters) %>% 
+  summarise(Mean = round(mean(Motives), 2),
+            SD   = round(sd(Motives), 2),
+            N = length(Motives))
+
+varTest <- var.test(Motives ~ clusters, data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Motives ~ clusters, var.equal = trueVarTest, data = Data)
+Model
+
+effectsize(Model)
+
+boxplot(Data$Motives ~ Data$clusters,
+  ylab = "Motives",
+  main = 'Clusters'
+)
+
+```

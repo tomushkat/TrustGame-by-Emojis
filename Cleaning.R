@@ -10,7 +10,7 @@ colnames(originalData)[6] <- 'Duration'
 data_clean <- originalData[3:nrow(originalData), ]
 data_clean <- data_clean %>% 
   mutate(Duration = as.numeric(Duration) / 60) %>% 
-  filter(anytime(StartDate) > '2021-07-28')
+  filter(anytime(StartDate) > '2021-07-29')
          
 data_clean <- data_clean %>% 
   mutate(emCondition1 = paste0(FL_7_DO_Manyemojis, FL_7_DO_Fewemojis, FL_7_DO_Noemojis),
@@ -57,13 +57,21 @@ view(data_clean)
 
 # Removing timing outliers
 data_clean4 <- data_clean3 %>% 
-  filter(Duration > 0)
+  filter(Duration > 0) %>% 
+  filter(Disturbances == 'No')
 
-data_clean4 %>% filter(Gender != mf)
+
+
+view(data_clean4 %>% filter(Gender != mf))
 
 data_clean4 %>% select(Gender, mf)
 
+
 data_clean5 <- data_clean4 %>% 
+  filter(`Motives for EM_10` == 6)
+
+
+data_clean6 <- data_clean5 %>% 
   mutate(Amount = ifelse(is.na(amountAF_4) == FALSE, amountAF_4, amountQF_4),
          Trust = ifelse(is.na(trustAF_1) == FALSE, trustAF_1, trustQF_6),
          Amount = as.numeric(Amount),
@@ -72,7 +80,7 @@ data_clean5 <- data_clean4 %>%
          scaledTrust = scale(Trust),
          meandDV = colMeans(scaledAmount, scaledTrust))
 
-cleanData <- data_clean5
+cleanData <- data_clean6
 
 
 originalData <- NULL
@@ -81,6 +89,8 @@ data_clean1 <- NULL
 data_clean2 <- NULL
 data_clean3 <- NULL
 data_clean4 <- NULL
+data_clean5 <- NULL
+data_clean6 <- NULL
 
 view(cleanData)
 

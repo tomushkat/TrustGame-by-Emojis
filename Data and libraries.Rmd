@@ -17,11 +17,51 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, warning=FALSE, message=FALSE}
-pacman::p_load(tidyverse, here, skimr, anytime, car, effectsize, gmodels, apaTables, psych)
+pacman::p_load(tidyverse, here, skimr, anytime, car, effectsize, gmodels, apaTables, psych, rcompanion, ResourceSelection, lmtest, faraway, estimatr)
 
-# originalData <- read_csv(here('Data/trialData.csv'))
- Data <- read_csv(here('Data/cleanData.csv'))
+ # Male <- read_csv(here('Data/maleData.csv'))
+ # Female <- read_csv(here('Data/femaleData.csv'))
 
+# Male1 <- Male[3:nrow(Male), ]
+# Male2 <- Male1 %>% 
+#   filter(anytime(StartDate) > '2021-07-29') %>% 
+#   drop_na(Q2)
+# Male2[duplicated(Male2$Q2), ]         
+# Male2 %>% filter(Q2 == '60c9b355b071b8a1b6b49d5b')
+# 
+# Female1 <- Female[3:nrow(Female), ]
+# Female2 <- Female1 %>% 
+#   filter(anytime(StartDate) > '2021-07-29') %>% 
+#   drop_na(Q2)
+# Female2[duplicated(Female2$Q2), ]         
 
+ # originalData <- rbind(Male, Female)
+
+         
+# write.csv(Data, 'cleanDataUpdated.csv')
+Data <- read_csv(here('Data/cleanDataUpdated.csv'))
+# newData <- Data %>% filter(understandPurpse != 'didNotUnderstand')
+# nrow(newData)
+
+```
+
+```{r, warning=FALSE, message=FALSE}
+# colnames(originalData)[6] <- 'Duration'
+# #
+# data_clean <- originalData[3:nrow(originalData), ]
+# data_clean1 <- data_clean %>%
+#   mutate(Duration = as.numeric(Duration) / 60) %>%
+#   filter(anytime(StartDate) > '2021-07-29') %>%
+#   filter(Duration > 0) %>%
+#   mutate(Amount = ifelse(is.na(amountAF_4) == FALSE, amountAF_4, amountQF_4),
+#          Amount = as.numeric(Amount))
+# #
+# data_clean2 <- data_clean1 %>%
+#   filter(Amount != 0) %>%
+#   mutate(newAmount = round((Amount * 3 + 10) / 2 * 0.72 / 100, 2)) %>%
+#   select(Q2, mf, Amount, newAmount) %>%
+#   drop_na()
+# 
+# write.csv(data_clean2, 'bonusList.csv')
 ```
 

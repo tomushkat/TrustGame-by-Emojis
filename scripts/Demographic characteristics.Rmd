@@ -18,6 +18,11 @@ knitr::opts_chunk$set(echo = TRUE)
 # Age
 ## Descriptive statistics
 ```{r, warning=FALSE, message=FALSE}
+table(Data$howDecide)
+table(Data$howDecide, Data$Order)
+table(Data$howDecide, Data$emCondition)
+
+
 skim(Data$Age)
 ```
 
@@ -32,6 +37,12 @@ varTest <- var.test(Age ~ Order, data = Data)
 trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
 Model <- t.test(Age ~ Order, var.equal = trueVarTest, data = Data)
 Model
+effectsize(Model)
+
+boxplot(Data$Age ~ Data$Order,
+  ylab = "Age",
+  main = 'Order'
+)
 ```
 
 ## Correlations with emCondition
@@ -42,8 +53,8 @@ Data %>%
             SD   = round(sd(Age), 2))
 
 Leven <- leveneTest(Data$Age ~ Data$emCondition)  # car packages
-trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
-Model <- aov(Age ~ emCondition, var.equal = trueVarTest, data = Data)
+trueVarTest <- ifelse(varTest$p.value < 0.05, TRUE, FALSE)
+Model <- aov(Age ~ emCondition, data = Data)
 Anova(Model, type = 'III', white.adjust = trueVarTest)
 ```
 
@@ -60,44 +71,60 @@ apa.cor.table(corData)
 ```{r, warning=FALSE, message=FALSE}
 table(Data$Gender)
 round(100 * table(Data$Gender) / nrow(Data), 2)
+
+table(Data$mf)
+round(100 * table(Data$mf) / nrow(Data), 2)
 ```
 
 ## Correlations with emCondition
 ```{r, warning=FALSE, message=FALSE}
-CrossTable(Data$Gender[Data$Gender != 'Other'], Data$emCondition[Data$Gender != 'Other'], format = 'SPSS', chisq = T)
+CrossTable(Data$mf, Data$emCondition, format = 'SPSS', chisq = T)
 ```
 
 ## Correlations with Order
 ```{r, warning=FALSE, message=FALSE}
-CrossTable(Data$Gender[Data$Gender != 'Other'], Data$Order[Data$Gender != 'Other'], format = 'SPSS', chisq = T)
+CrossTable(Data$mf, Data$Order, format = 'SPSS', chisq = T)
 ```
 
 ## Correlations with Amount
 ```{r, warning=FALSE, message=FALSE}
 Data %>% 
-  filter(Gender != 'Other') %>% 
-  group_by(Gender) %>% 
+  group_by(mf) %>% 
   summarise(Mean = round(mean(Amount), 2),
             SD   = round(sd(Amount), 2))
 
-varTest <- var.test(Amount ~ Gender, data = Data[Data$Gender != 'Other', ])
+varTest <- var.test(Amount ~ mf, data = Data)
 trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
-Model <- t.test(Amount ~ Gender, var.equal = trueVarTest, data = Data[Data$Gender != 'Other', ])
+Model <- t.test(Amount ~ mf, var.equal = trueVarTest, data = Data)
 Model
+
+effectsize(Model)
+
+boxplot(Data$Amount ~ Data$mf,
+  ylab = "Amount",
+  main = 'Gender'
+)
+
 ```
 
 ## Correlations with Trust
 ```{r, warning=FALSE, message=FALSE}
 Data %>% 
-  filter(Gender != 'Other') %>% 
-  group_by(Gender) %>% 
+  group_by(mf) %>% 
   summarise(Mean = round(mean(Trust), 2),
             SD   = round(sd(Trust), 2))
 
-varTest <- var.test(Trust ~ Gender, data = Data[Data$Gender != 'Other', ])
+varTest <- var.test(Trust ~ mf, data = Data)
 trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
-Model <- t.test(Trust ~ Gender, var.equal = trueVarTest, data = Data[Data$Gender != 'Other', ])
+Model <- t.test(Trust ~ mf, var.equal = trueVarTest, data = Data)
 Model
+
+effectsize(Model)
+
+boxplot(Data$Trust ~ Data$mf,
+  ylab = "Trust",
+  main = 'Gender'
+)
 ```
 
 # maritalStatus
@@ -105,6 +132,11 @@ Model
 ```{r, warning=FALSE, message=FALSE}
 table(Data$maritalStatus)
 round(100 * table(Data$maritalStatus) / nrow(Data), 2)
+
+Data <- Data %>% 
+  mutate(originalMaritalStatus = maritalStatus,
+         maritalStatus = ifelse(maritalStatus == 'Married' | maritalStatus == 'In a serious relationship', 'Married', 'nonMarreid'))
+
 ```
 
 ## Correlations with emCondition
@@ -124,10 +156,10 @@ Data %>%
   summarise(Mean = round(mean(Amount), 2),
             SD   = round(sd(Amount), 2))
 
-Leven <- leveneTest(Data$Amount ~ Data$maritalStatus)  # car packages
+varTest <- var.test(Trust ~ maritalStatus, data = Data)
 trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
-Model <- aov(Amount ~ maritalStatus, var.equal = trueVarTest, data = Data)
-Anova(Model, type = 'III', white.adjust = trueVarTest)
+Model <- t.test(Trust ~ maritalStatus, var.equal = trueVarTest, data = Data)
+Model
 ```
 
 ## Correlations with Trust
@@ -137,10 +169,10 @@ Data %>%
   summarise(Mean = round(mean(Trust), 2),
             SD   = round(sd(Trust), 2))
 
-Leven <- leveneTest(Data$Trust ~ Data$maritalStatus)  # car packages
+varTest <- var.test(Trust ~ maritalStatus, data = Data)
 trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
-Model <- aov(Trust ~ maritalStatus, var.equal = trueVarTest, data = Data)
-Anova(Model, type = 'III', white.adjust = trueVarTest)
+Model <- t.test(Trust ~ maritalStatus, var.equal = trueVarTest, data = Data)
+Model
 ```
 
 # Parent
@@ -164,12 +196,12 @@ CrossTable(Data$Parent, Data$Order, format = 'SPSS', chisq = T)
 ```{r, warning=FALSE, message=FALSE}
 Data %>% 
   group_by(Parent) %>% 
-  summarise(Mean = round(mean(Trust), 2),
-            SD   = round(sd(Trust), 2))
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2))
 
-varTest <- var.test(Trust ~ Parent, data = Data)
+varTest <- var.test(Amount ~ Parent, data = Data)
 trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
-Model <- t.test(Trust ~ Parent, var.equal = trueVarTest, data = Data)
+Model <- t.test(Amount ~ Parent, var.equal = trueVarTest, data = Data)
 Model
 ```
 
@@ -189,8 +221,14 @@ Model
 # Religion
 ## Descriptive statistics
 ```{r, warning=FALSE, message=FALSE}
-table(Data$Religion)
+table(Data$originalReligion)
+
+CrossTable(Data$Religion, Data$religionAffiliation, chisq = T, format = 'SPSS')
 round(100 * table(Data$Religion) / nrow(Data), 2)
+
+Data <- Data %>% 
+  mutate(originalReligion = Religion,
+         Religion = ifelse(Religion == 'Christian', 'Christian', 'Other'))
 ```
 
 ## Correlations with emCondition
@@ -203,16 +241,16 @@ CrossTable(Data$Religion, Data$emCondition, format = 'SPSS', chisq = T)
 CrossTable(Data$Religion, Data$Order, format = 'SPSS', chisq = T)
 ```
 
-## Correlations with Trust
+## Correlations with Amount
 ```{r, warning=FALSE, message=FALSE}
 Data %>% 
   group_by(Religion) %>% 
-  summarise(Mean = round(mean(Trust), 2),
-            SD   = round(sd(Trust), 2))
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2))
 
-varTest <- var.test(Trust ~ Religion, data = Data)
+varTest <- var.test(Amount ~ Religion, data = Data)
 trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
-Model <- t.test(Trust ~ Religion, var.equal = trueVarTest, data = Data)
+Model <- t.test(Amount ~ Religion, var.equal = trueVarTest, data = Data)
 Model
 ```
 
@@ -227,49 +265,72 @@ varTest <- var.test(Trust ~ Religion, data = Data)
 trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
 Model <- t.test(Trust ~ Religion, var.equal = trueVarTest, data = Data)
 Model
+
+effectsize(Model)
+
+boxplot(Data$Trust ~ Data$Religion,
+  ylab = "Trust",
+  main = 'Religion'
+)
 ```
 
 # religionAffiliation
 ## Descriptive statistics
 ```{r, warning=FALSE, message=FALSE}
-table(Data$religionAffilation)
+table(Data$religionAffiliation)
 round(100 * table(Data$religionAffilation) / nrow(Data), 2)
+
+Data$Secular <- ifelse(Data$religionAffiliation == 'Secular', 'Secular', 'nonSecular')
 ```
 
 ## Correlations with emCondition
 ```{r, warning=FALSE, message=FALSE}
-CrossTable(Data$religionAffiliation, Data$emCondition, format = 'SPSS', chisq = T)
+CrossTable(Data$Secular, Data$emCondition, format = 'SPSS', chisq = T)
 ```
 
 ## Correlations with Order
 ```{r, warning=FALSE, message=FALSE}
-CrossTable(Data$religionAffiliation, Data$Order, format = 'SPSS', chisq = T)
+CrossTable(Data$Secular, Data$Order, format = 'SPSS', chisq = T)
 ```
 
 ## Correlations with Amount
 ```{r, warning=FALSE, message=FALSE}
 Data %>% 
-  group_by(religionAffiliation) %>% 
+  group_by(Secular) %>% 
   summarise(Mean = round(mean(Amount), 2),
             SD   = round(sd(Amount), 2))
 
-Leven <- leveneTest(Data$Amount ~ Data$religionAffiliation)  # car packages
+varTest <- var.test(Trust ~ Secular, data = Data)
 trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
-Model <- aov(Amount ~ religionAffiliation, var.equal = trueVarTest, data = Data)
-Anova(Model, type = 'III', white.adjust = trueVarTest)
+Model <- t.test(Trust ~ Secular, var.equal = trueVarTest, data = Data)
+Model
+
+effectsize(Model)
+
+boxplot(Data$Trust ~ Data$Secular,
+  ylab = "Trust",
+  main = 'Secular'
+)
 ```
 
 ## Correlations with Trust
 ```{r, warning=FALSE, message=FALSE}
 Data %>% 
-  group_by(religionAffiliation) %>% 
+  group_by(Secular) %>% 
   summarise(Mean = round(mean(Trust), 2),
             SD   = round(sd(Trust), 2))
 
-Leven <- leveneTest(Data$Trust ~ Data$religionAffiliation)  # car packages
+varTest <- var.test(Trust ~ Secular, data = Data)
 trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
-Model <- aov(Trust ~ religionAffiliation, var.equal = trueVarTest, data = Data)
-Anova(Model, type = 'III', white.adjust = trueVarTest)
+Model <- t.test(Trust ~ Secular, var.equal = trueVarTest, data = Data)
+Model
+
+effectsize(Model)
+
+boxplot(Data$Trust ~ Data$Secular,
+  ylab = "Trust",
+  main = 'Secular'
+)
 ```
 
 
@@ -278,6 +339,12 @@ Anova(Model, type = 'III', white.adjust = trueVarTest)
 ```{r, warning=FALSE, message=FALSE}
 table(Data$Education)
 round(100 * table(Data$Education) / nrow(Data), 2)
+
+
+Data <- Data %>% 
+  mutate(originalEducation = Education,
+         Education = ifelse(Education == 'High school graduate' | Education == 'Less than high school', 'Some college +', Education))
+
 ```
 
 ## Correlations with emCondition
@@ -320,8 +387,17 @@ Anova(Model, type = 'III', white.adjust = trueVarTest)
 # Socioeconomic
 ## Descriptive statistics
 ```{r, warning=FALSE, message=FALSE}
-table(Data$Socioeconomic)
+table(Data$originalSocioeconomic)
 round(100 * table(Data$Socioeconomic) / nrow(Data), 2)
+
+Data <- Data %>% 
+  mutate(originalSocioeconomic = Socioeconomic,
+         Socioeconomic = ifelse(Socioeconomic == 'Less than $20,000' | Socioeconomic == '$20,000 - $39,999', 'Less then $39999',
+                                ifelse(Socioeconomic == '$80,000 - $99,999' | Socioeconomic == '$100,000 - $119,999', '80000 - 119000', Socioeconomic)))
+Data$Socioeconomic <- as.factor(Data$Socioeconomic)
+levels(Data$Socioeconomic) <- c('Less then $39999', '$40,000 - $59,999', '$60,000 - $79,999', '80000 - 119000', '$120,000 or more')
+
+
 ```
 
 ## Correlations with emCondition
@@ -363,43 +439,127 @@ Anova(Model, type = 'III', white.adjust = trueVarTest)
 # Political
 ## Descriptive statistics
 ```{r, warning=FALSE, message=FALSE}
-table(Data$Political)
-round(100 * table(Data$Political) / nrow(Data), 2)
+table(Data$Politics)
+round(100 * table(Data$Politics) / nrow(Data), 2)
 ```
 
 ## Correlations with emCondition
 ```{r, warning=FALSE, message=FALSE}
-CrossTable(Data$Political, Data$emCondition, format = 'SPSS', chisq = T)
+CrossTable(Data$Politics, Data$emCondition, format = 'SPSS', chisq = T)
 ```
 
 ## Correlations with Order
 ```{r, warning=FALSE, message=FALSE}
-CrossTable(Data$Political, Data$Order, format = 'SPSS', chisq = T)
+CrossTable(Data$Politics, Data$Order, format = 'SPSS', chisq = T)
 ```
 
 ## Correlations with Amount
 ```{r, warning=FALSE, message=FALSE}
 Data %>% 
-  group_by(Political) %>% 
+  group_by(Politics) %>% 
   summarise(Mean = round(mean(Amount), 2),
             SD   = round(sd(Amount), 2))
 
-Leven <- leveneTest(Data$Amount ~ Data$Political)  # car packages
+Leven <- leveneTest(Data$Amount ~ Data$Politics)  # car packages
 trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
-Model <- aov(Amount ~ Political, var.equal = trueVarTest, data = Data)
+Model <- aov(Amount ~ Politics, var.equal = trueVarTest, data = Data)
 Anova(Model, type = 'III', white.adjust = trueVarTest)
 ```
 
 ## Correlations with Trust
 ```{r, warning=FALSE, message=FALSE}
 Data %>% 
-  group_by(Political) %>% 
+  group_by(Politics) %>% 
   summarise(Mean = round(mean(Trust), 2),
             SD   = round(sd(Trust), 2))
 
-Leven <- leveneTest(Data$Trust ~ Data$Political)  # car packages
+Leven <- leveneTest(Data$Trust ~ Data$Politics)  # car packages
 trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
-Model <- aov(Trust ~ Political, var.equal = trueVarTest, data = Data)
+Model <- aov(Trust ~ Politics, var.equal = trueVarTest, data = Data)
 Anova(Model, type = 'III', white.adjust = trueVarTest)
 ```
 
+# How decided
+## Descriptive statistics
+```{r, warning=FALSE, message=FALSE}
+table(Data$howDecide)
+round(100 * table(Data$Politics) / nrow(Data), 2)
+```
+
+## Correlations with emCondition
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$influencedByB, Data$emCondition, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Order
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$influencedByB, Data$Order, format = 'SPSS', chisq = T)
+```
+
+## Correlations with Amount
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(influencedByB) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2))
+
+varTest <- var.test(Amount ~ influencedByB, data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Amount ~ influencedByB, var.equal = trueVarTest, data = Data)
+Model
+
+effectsize(Model)
+
+boxplot(Data$Amount ~ Data$influencedByB,
+  ylab = "Amount",
+  main = 'influencedByB'
+)
+```
+
+## Correlations with Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(influencedByB) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+varTest <- var.test(Trust ~ influencedByB, data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Trust ~ influencedByB, var.equal = trueVarTest, data = Data)
+Model
+
+effectsize(Model)
+
+boxplot(Data$Trust ~ Data$influencedByB,
+  ylab = "Trust",
+  main = 'influencedByB'
+)
+```
+
+## Correlations with Amount
+```{r, warning=FALSE, message=FALSE}
+table(Data$influencedByB, Data$understandPurpse)
+
+Data %>% 
+  group_by(Politics) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2))
+
+Leven <- leveneTest(Data$Amount ~ Data$influencedByB * Data$understandPurpse)  # car packages
+trueVarTest <- ifelse(varTest$p.value < 0.05, TRUE, FALSE)
+Model <- aov(Amount ~ Data$influencedByB * Data$understandPurpse, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+```
+
+## Correlations with Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(Politics) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2))
+
+Leven <- leveneTest(Data$Trust ~ Data$Politics)  # car packages
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- aov(Trust ~ Politics, var.equal = trueVarTest, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+```

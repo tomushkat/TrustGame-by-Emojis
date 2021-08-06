@@ -11,8 +11,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Frequency
 ```{r, warning=FALSE, message=FALSE}
-cor.test(Data$useEM_me_1, Data$useEM_others_1)
+Model <- cor.test(Data$useEM_me_1, Data$useEM_others_1)
+Model
+round(100 * Model$estimate ^ 2, 2)
+alpha(as.matrix(cbind(cbind(Data$useEM_me_1, Data$useEM_others_1))))
+
+
 Data$emojiUse <- rowMeans(cbind(Data$useEM_me_1, Data$useEM_others_1))
+
 
 skim(Data$emojiUse)
 ```
@@ -20,22 +26,23 @@ skim(Data$emojiUse)
 # Attitudes
 ```{r, warning=FALSE, message=FALSE}
 Data <- Data %>% 
-  mutate(Usefulness_4_R = 6 -  Usefulness_4,
-         Amusement_4_R  = 6 -  Amusement_4,
+  mutate(Amusement_4_R  = 6 -  Amusement_4,
          Formality_4_R  = 6 -  Formality_4,
          Vallance_7_R   = 6 -  Vallance_7)
 
 Attitude <- Data %>% 
-  select(Usefulness_4_R, Interest_4, Amusement_4_R,
+  select(Usefulness_4, Interest_4, Amusement_4_R,
          Ease_4, Formality_4_R, Vallance_7_R) %>% 
   as.matrix()
 
 alpha(Attitude)
 
+# Dropping formality then alpha = .77
+
 
 Data$Attitudes <- Data %>% 
-  select(Usefulness_4_R, Interest_4, Amusement_4_R,
-         Ease_4, Formality_4_R, Vallance_7_R) %>%
+  select(Usefulness_4, Interest_4, Amusement_4_R,
+         Ease_4, Vallance_7_R) %>%
   rowMeans()
 
 skim(Data$Attitudes)
@@ -47,7 +54,7 @@ skim(Data$Attitudes)
 
 Motives <- Data %>% 
   select(`Motives for EM_1`, `Motives for EM_2`, `Motives for EM_3`, `Motives for EM_4`, `Motives for EM_5`,
-         `Motives for EM_6`, `Motives for EM_7`, `Motives for EM_8`, `Motives for EM_9`, `Motives for EM_10`) %>% 
+         `Motives for EM_6`, `Motives for EM_7`, `Motives for EM_8`, `Motives for EM_9`) %>% 
   as.matrix()
 
 
@@ -55,10 +62,61 @@ alpha(Motives)
 
 Data$Motives <- Data %>% 
   select(`Motives for EM_1`, `Motives for EM_2`, `Motives for EM_3`, `Motives for EM_4`, `Motives for EM_5`,
-         `Motives for EM_6`, `Motives for EM_7`, `Motives for EM_8`, `Motives for EM_9`, `Motives for EM_10`) %>%
+         `Motives for EM_6`, `Motives for EM_7`, `Motives for EM_8`, `Motives for EM_9`) %>%
   rowMeans()
   
 
 skim(Data$Motives)
 ```
+
+```{r, warning=FALSE, message=FALSE}
+apa.cor.table(as.matrix(cbind(emojiUse = Data$emojiUse, Attitudes = Data$Attitudes, Motives = Data$Motives)))
+```
+
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+        mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  group_by(emCondition, mf) %>% 
+  summarise(meanA1 = mean(influencedFactorsA_1, na.rm = T),
+            meanA2 = mean(influencedFactorsA_2, na.rm = T),
+            meanB1 = mean(influencedFactorsB_1, na.rm = T),
+            NA1 = length(na.omit(influencedFactorsA_1)),
+            NB1 = length(na.omit(influencedFactorsB_1)))
+
+Data %>% 
+        mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  filter(emCondition != 'No') %>% 
+  ggplot(aes(x = influencedFactorsA_1)) + 
+  geom_histogram() + 
+  facet_grid(~emCondition)
+
+Data %>% 
+        mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  filter(emCondition != 'No') %>%  
+  ggplot(aes(x = influencedFactorsA_2)) + 
+  geom_histogram() + 
+  facet_grid(~emCondition)
+
+Data %>% 
+  filter(emCondition == 'No') %>%  
+  ggplot(aes(x = influencedFactorsB_1)) + 
+  geom_histogram() 
+
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+
+
+cor.test(Data$influencedFactorsA_1, Data$influencedFactorsA_2) 
+
+alpha(cbind(Data$influencedFactorsA_1, Data$influencedFactorsA_2))
+
+Data <- Data %>% 
+  mutate(influencedFactorsA = rowMeans(as.matrix(cbind(influencedFactorsA_1, influencedFactorsA_2))),
+         influencedFactorsB = influencedFactorsB_1,
+         influencedFactors = ifelse(is.na(influencedFactorsB) == T, influencedFactorsA, influencedFactorsB)) 
+```
+
+
 

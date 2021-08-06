@@ -1,0 +1,565 @@
+---
+title: "Report"
+author: "Tom Mushkat"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: kable
+    results: hide
+    theme: readable
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=FALSE, message=FALSE}
+pacman::p_load(tidyverse, here, skimr, anytime, car, effectsize, gmodels, apaTables, psych)
+
+Data <- read_csv(here('Data/cleanDataUpdated.csv'))
+```
+
+# Correlation between the DVs
+
+We can see a medium size positive correlation between the Trust in Player B, and the money s.he recived.
+```{r, warning=FALSE, message=FALSE}
+cor.test(Data$Amount, Data$Trust)
+```
+
+# Controls 
+## Only controls
+### Correlation table
+There are strong positive correlations between all the controls:
+
+(1) Frequency of emoji use
+
+(2) Attitudes towards emojis
+
+(3) Motive to use emojis
+
+(4) How much the massage influence (negative-positive)
+
+```{r, warning=FALSE, message=FALSE}
+apa.cor.table(as.matrix(cbind(emojiUse = Data$emojiUse, Attitudes = Data$Attitudes, Motives = Data$Motives, influencedFactors = Data$influencedFactors)))
+```
+
+### Difference by understanding the EXP purpose
+
+The participants who understood the manipulation (indicated that they understood that the manipulation was about emojis when Player B sent the message) were not influenced by the message (marginally) in comparison with the participants that did not understand the purpose.
+
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(understandPurpse ) %>% 
+  summarise(Mean = round(mean(influencedFactors), 2),
+            SD   = round(sd(influencedFactors), 2),
+            N = length(influencedFactors))
+
+varTest <- var.test(influencedFactors ~ understandPurpse , data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(influencedFactors ~ understandPurpse , var.equal = trueVarTest, data = Data)
+Model
+
+effectsize(Model)
+
+boxplot(Data$influencedFactors ~ Data$understandPurpse ,
+  ylab = "Influenced by Player B negative-positive",
+  main = 'Understand Purpse '
+)
+```
+
+## Difference at the controls by gender
+
+Females used emoji more often, and had better attitudes and motives towards emojis in comparison with males. However, females were not influenced more than males by Player B. Moreover, higher frequency of females understand the EXP purpose in comparison with males.
+
+### Frequency * Gender
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(mf) %>% 
+  summarise(Mean = round(mean(emojiUse), 2),
+            SD   = round(sd(emojiUse), 2),
+            N = length(emojiUse))
+
+varTest <- var.test(emojiUse ~ mf , data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(emojiUse ~ mf , var.equal = trueVarTest, data = Data)
+Model
+
+effectsize(Model)
+
+boxplot( Data$emojiUse ~ Data$mf ,
+  ylab = "Frequency",
+  main = 'Frequency * Gender '
+)
+```
+
+### Attitudes * Gender
+
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(mf) %>% 
+  summarise(Mean = round(mean(Attitudes), 2),
+            SD   = round(sd(Attitudes), 2),
+            N = length(Attitudes))
+
+varTest <- var.test(Attitudes ~ mf , data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Attitudes ~ mf , var.equal = trueVarTest, data = Data)
+Model
+
+effectsize(Model)
+
+boxplot(Data$Attitudes ~ Data$mf ,
+  ylab = "Attitudes",
+  main = 'Attitudes * Gender'
+)
+```
+
+### Motives * Gender
+
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(mf) %>% 
+  summarise(Mean = round(mean(Motives), 2),
+            SD   = round(sd(Motives), 2),
+            N = length(Motives))
+
+varTest <- var.test(Motives ~ mf , data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Motives ~ mf , var.equal = trueVarTest, data = Data)
+Model
+
+effectsize(Model)
+
+boxplot(Data$Motives ~ Data$mf ,
+  ylab = "Motives",
+  main = 'Motives * Gender'
+)
+```
+
+### Influenced * Gender
+
+```{r, warning=FALSE, message=FALSE}
+
+Data %>% 
+  group_by(mf) %>% 
+  summarise(Mean = round(mean(influencedFactors), 2),
+            SD   = round(sd(influencedFactors), 2),
+            N = length(influencedFactors))
+
+varTest <- var.test(influencedFactors ~ mf , data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(influencedFactors ~ mf , var.equal = trueVarTest, data = Data)
+Model
+```
+
+### Understand Purpse * Gender
+
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$understandPurpse, Data$mf, chisq = T, format = 'SPSS')
+Model <- chisq.test(Data$understandPurpse, Data$mf, correct = FALSE)
+effectsize(Model, type = 'phi')
+```
+
+# Correlations of the DV with Controls and Gender
+
+We can see strong and positive correlations between the continuous controls and the Trust in player B. However, for the Amount given, there was a positive correlation only with degree of influence by Player B.
+
+We can see that males trusted more in Player B and gave more money in comparison with females.
+We can see that there are no significant difference at the DVs by understanding the manipulation. However, the size effects are large and indicate that the participants who understand the manipulation trusted lass and gave less money. 
+
+## (1) Correlation tables between the continuous controls and Amount
+## (2) Correlation tables between the continuous controls and Trust
+
+```{r, warning=FALSE, message=FALSE}
+apa.cor.table(as.matrix(cbind(Amount = Data$Amount, emojiUse = Data$emojiUse, Attitudes = Data$Attitudes, Motives = Data$Motives, Influece = Data$influencedFactors)))
+
+
+apa.cor.table(as.matrix(cbind(Trust = Data$Trust, emojiUse = Data$emojiUse, Attitudes = Data$Attitudes, Motives = Data$Motives, Influece = Data$influencedFactors)))
+```
+
+## Amount * Gender
+
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(mf) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2),
+            N = length(Amount))
+
+varTest <- var.test(Amount ~ mf , data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Amount ~ mf , var.equal = trueVarTest, data = Data)
+Model
+
+
+effectsize(Model)
+
+boxplot(Data$Amount ~ Data$mf ,
+  ylab = "Amount",
+  main = 'Amount * Gender'
+)
+```
+
+## Trust * Gender
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(mf) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2),
+            N = length(Trust))
+
+varTest <- var.test(Trust ~ mf , data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Trust ~ mf , var.equal = trueVarTest, data = Data)
+Model
+
+
+effectsize(Model)
+
+boxplot(Data$Trust ~ Data$mf ,
+  ylab = "Trust",
+  main = 'Trust * Gender'
+)
+```
+
+## Amount * Understand Purpose
+
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(understandPurpse) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2),
+            N = length(Amount))
+
+varTest <- var.test(Amount ~ understandPurpse , data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Amount ~ understandPurpse , var.equal = trueVarTest, data = Data)
+Model
+
+
+effectsize(Model)
+
+boxplot(Data$Amount ~ Data$understandPurpse ,
+  ylab = "Amount",
+  main = 'Amount * Understand Purpse'
+)
+```
+
+## Trust * Understand Purpose
+
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(understandPurpse) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2),
+            N = length(Trust))
+
+varTest <- var.test(Trust ~ understandPurpse , data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Trust ~ understandPurpse , var.equal = trueVarTest, data = Data)
+Model
+
+
+effectsize(Model)
+
+boxplot(Data$Trust ~ Data$understandPurpse ,
+  ylab = "Trust",
+  main = 'Trust * Understand Purpse'
+)
+```
+
+
+
+# participatns who indicated to be influence bt Player B
+
+## Influenced by B * Understand Purpose
+
+We can see that the participants who indicated to be influenced b Player B were influenced more positively by Player B, gave more money but did not trusted him.
+They also did not understood the study's purpose, and there was no correlation with gender. 
+
+## Understand Purpse * Understand Purpose
+
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$influencedByB, Data$understandPurpse, chisq = T, format = 'SPSS')
+```
+
+## Gender * influenced By B
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$influencedByB, Data$mf, chisq = T, format = 'SPSS')
+```
+
+## Influenced * influenced By B
+```{r, warning=FALSE, message=FALSE}
+
+Data %>% 
+  group_by(influencedByB) %>% 
+  summarise(Mean = round(mean(influencedFactors), 2),
+            SD   = round(sd(influencedFactors), 2),
+            N = length(influencedFactors))
+
+varTest <- var.test(influencedFactors ~ influencedByB , data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(influencedFactors ~ influencedByB , var.equal = trueVarTest, data = Data)
+Model
+
+boxplot(Data$influencedFactors ~ Data$influencedByB ,
+  ylab = "Influenced positive negative",
+  main = 'Influenced * influenced By B'
+)
+```
+
+## Amount * influenced By B
+```{r, warning=FALSE, message=FALSE}
+
+Data %>% 
+  group_by(influencedByB) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2),
+            N = length(Amount))
+
+varTest <- var.test(Amount ~ influencedByB , data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Amount ~ influencedByB , var.equal = trueVarTest, data = Data)
+Model
+
+boxplot(Data$Amount ~ Data$influencedByB ,
+  ylab = "Amount",
+  main = 'Amount * influencedByB'
+)
+```
+
+
+## Trust * influenced By B
+```{r, warning=FALSE, message=FALSE}
+
+Data %>% 
+  group_by(influencedByB) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2),
+            N = length(Trust))
+
+varTest <- var.test(Trust ~ influencedByB , data = Data)
+trueVarTest <- ifelse(varTest$p.value > 0.05, TRUE, FALSE)
+Model <- t.test(Trust ~ influencedByB , var.equal = trueVarTest, data = Data)
+Model
+```
+
+
+
+
+
+
+
+
+
+
+
+
+# One-ways
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$influencedByB, Data$understandPurpse, chisq = T, format = 'SPSS')
+
+Data$emConditionOneWayAmount <- as.factor(Data$emCondition)
+contrasts(Data$emConditionOneWayAmount)
+EMvsNoEM <- c(0, 1, 0)
+ManyVSSingle <- c(1, 0, 0)
+contrasts(Data$emConditionOneWayAmount) <- cbind(EMvsNoEM, ManyVSSingle)
+
+Data$emConditionOneWayTrust <- as.factor(Data$emCondition)
+contrasts(Data$emConditionOneWayTrust)
+EMvsNoEM <- c(0, 1, 0)
+ManyVSSingle <- c(1, 0, 0)
+contrasts(Data$emConditionOneWayTrust) <- cbind(EMvsNoEM, ManyVSSingle)
+
+contrasts(Data$emConditionOneWayAmount)
+contrasts(Data$emConditionOneWayTrust)
+```
+
+## Amount
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  # filter(Order == 'amountFirst') %>% 
+  group_by(emCondition) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2),
+            N = length(Amount))
+
+Leven <- leveneTest(Data$Amount ~ Data$emConditionOneWayAmount)  # car packages
+trueVarTest <- ifelse(Leven$`Pr(>F)`[1] < 0.05, TRUE, FALSE)
+Model <- aov(Amount ~ emConditionOneWayAmount, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+
+Data %>% 
+  # filter(Order == 'questionFirst') %>% 
+        mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  ggplot(aes(x = emCondition, y = Amount, fill = emCondition)) + 
+    # geom_bar(stat = 'summary', position = position_dodge()) +
+  geom_boxplot(color = 'purple', alpha = 2) + 
+      geom_violin(alpha = 0.1) +
+  scale_fill_manual(values = c('darkgrey', 'lightgrey', 'lightgreen')) +
+  geom_jitter(aes(x = emCondition, y = Amount, fill = emCondition), color = 'blue') + 
+    stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), 
+               geom = "errorbar", color = "red", width = 0.2) +
+    stat_summary(fun.y = mean, geom = "point", color = "red") +
+    theme_classic() + ylab('Money') + xlab('Emoji level') + 
+    ggtitle('One-Way ANOVA bar plot: Money by Emoji') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+## Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  # filter(Order == 'questionFirst') %>% 
+    mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  group_by(emCondition) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2),
+            N = length(Trust))
+
+Leven1 <- leveneTest(Data$Trust ~ Data$emConditionOneWayTrust)  # car packages
+
+trueVarTest <- ifelse(Leven1$`Pr(>F)`[1] < 0.05, TRUE, FALSE)
+Model <- aov(Trust ~ emConditionOneWayTrust, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+
+
+Data %>% 
+  # filter(Order == 'questionFirst') %>% 
+  # filter(mf == 'Female') %>% 
+    mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  ggplot(aes(x = emCondition, y = Trust, fill = emCondition)) + 
+    # geom_bar(stat = 'summary', position = position_dodge()) +
+  geom_boxplot(color = 'purple', alpha = 2) + 
+      geom_violin(alpha = 0.1) +
+  scale_fill_manual(values = c('darkgrey', 'lightgrey', 'lightgreen')) +
+  geom_jitter(aes(x = emCondition, y = Trust, fill = emCondition), color = 'blue') + 
+    stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), 
+               geom = "errorbar", color = "red", width = 0.2) +
+    stat_summary(fun.y = mean, geom = "point", color = "red") +
+    theme_classic() + ylab('Trust') + xlab('Emoji level') + 
+    ggtitle('One-Way ANOVA bar plot: Trust by Emoji') +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+# Two-way influence * emoji no order
+## Amount
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(emCondition, influencedByB) %>% 
+  summarise(Mean = round(mean(Amount), 2),
+            SD   = round(sd(Amount), 2),
+            Max = max(Amount),
+            Min = min(Amount),
+            N = length(Amount))
+
+
+Leven1 <- leveneTest(Data$Amount ~ Data$emCondition)  # car packages
+Leven2 <- leveneTest(Data$Amount ~ Data$influencedByB)  # car packages
+Leven3 <- leveneTest(Data$Amount ~ Data$emCondition:Data$influencedByB)  # car packages
+Leven4 <- leveneTest(Data$Amount ~ Data$mf)  # car packages
+# Leven5 <- leveneTest(Data$Amount ~ Data$Secular)  # car packages
+
+
+trueVarTest <- ifelse(Leven1$`Pr(>F)`[1] < 0.05 | Leven2$`Pr(>F)`[1] < 0.05 | Leven3$`Pr(>F)`[1] < 0.05 | Leven4$`Pr(>F)`[1] < 0.05, TRUE, FALSE)
+Model <- aov(Amount ~ emCondition * influencedByB + mf, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+
+
+Data %>% 
+      mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  ggplot(aes(x = emCondition, y = Amount, fill = influencedByB)) + 
+    # geom_bar(stat = 'summary', position = position_dodge()) +
+    geom_boxplot(aes(color = influencedByB), alpha = 0.1, position = position_dodge(0.8), size = 1) + 
+      geom_violin(alpha = 0.1, position = position_dodge(0.8)) +
+  scale_fill_manual(values = c('darkgrey', 'lightgrey')) +
+  # geom_jitter(aes(x = emCondition, y = Amount, fill = Order), color = 'blue') + 
+     stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), 
+               geom = "errorbar", color = "purple", width = 0.2, position = position_dodge(0.8)) +
+    stat_summary(fun.y = mean, geom = "point", color = "purple", position = position_dodge(0.8), size = 2) +
+    theme_classic() + ylab('Money') + xlab('Emoji level') + 
+    ggtitle('Two-Way ANOVA bar plot: Money by Emoji') +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  facet_grid(~mf)
+
+
+Data %>% 
+      mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  ggplot(aes(x = emCondition, y = Amount, fill = influencedByB)) + 
+    stat_summary(aes(group = influencedByB, color = influencedByB), fun.y = "mean", geom = "line", 
+                 position = position_dodge(0.2)) + 
+    stat_summary(fun.y = "mean", geom = "point", aes(color = influencedByB), 
+                 position = position_dodge(0.2)) + 
+    stat_summary(fun.data = mean_sdl, geom = "errorbar", aes(color = influencedByB),
+                 position = position_dodge(0.2), width = 0.2) + 
+    theme_classic() + ylab('Money') + xlab('Emoji level') + 
+    ggtitle('Two-Way ANOVA: Money by Emoji * influencedByB') + theme(plot.title = element_text(hjust = 0.5)) 
+  facet_grid(~mf)
+  
+CrossTable(Data$everPlayed, Data$influencedByB, chisq = T, format = 'SPSS')
+
+
+```
+
+## Trust
+```{r, warning=FALSE, message=FALSE}
+Data %>% 
+  group_by(mf, influencedByB) %>% 
+  summarise(Mean = round(mean(Trust), 2),
+            SD   = round(sd(Trust), 2),
+            Max = max(Trust),
+            Min = min(Trust),
+            N = length(Trust))
+
+
+
+Leven1 <- leveneTest(Data$Trust ~ Data$emCondition)  # car packages
+Leven2 <- leveneTest(Data$Trust ~ Data$influencedByB)  # car packages
+Leven3 <- leveneTest(Data$Trust ~ Data$emCondition:Data$influencedByB)  # car packages
+Leven4 <- leveneTest(Data$Trust ~ Data$mf)  
+Leven5 <- leveneTest(Data$Trust ~ Data$Secular)  
+
+
+trueVarTest <- ifelse(Leven1$`Pr(>F)`[1] < 0.05 | Leven2$`Pr(>F)`[1] < 0.05 | Leven3$`Pr(>F)`[1] < 0.05 | Leven4$`Pr(>F)`[1] < 0.05 | Leven5$`Pr(>F)`[1] < 0.05, TRUE, FALSE)
+Model <- aov(Trust ~ emCondition * influencedByB + mf + Secular + Motives, data = Data)
+Anova(Model, type = 'III', white.adjust = trueVarTest)
+
+
+
+Data %>% 
+      mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  ggplot(aes(x = emCondition, y = Trust, fill = influencedByB)) + 
+    # geom_bar(stat = 'summary', position = position_dodge()) +
+    geom_boxplot(aes(color = influencedByB), alpha = 0.1, position = position_dodge(0.8), size = 1) + 
+      geom_violin(alpha = 0.1, position = position_dodge(0.8)) +
+  scale_fill_manual(values = c('darkgrey', 'lightgrey')) +
+  # geom_jitter(aes(x = emCondition, y = Amount, fill = Order), color = 'blue') + 
+     stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), 
+               geom = "errorbar", color = "purple", width = 0.2, position = position_dodge(0.8)) +
+    stat_summary(fun.y = mean, geom = "point", color = "purple", position = position_dodge(0.8), size = 2) +
+    theme_classic() + ylab('Trust') + xlab('Emoji level') + 
+    ggtitle('Two-Way ANOVA bar plot: Trust by Emoji') +
+  theme(plot.title = element_text(hjust = 0.5)) 
+  # facet_grid(~mf)
+
+
+
+Data %>% 
+      mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  ggplot(aes(x = emCondition, y = Trust, fill = influencedByB)) + 
+    stat_summary(aes(group = influencedByB, color = influencedByB), fun.y = "mean", geom = "line", 
+                 position = position_dodge(0.2)) + 
+    stat_summary(fun.y = "mean", geom = "point", aes(color = influencedByB), 
+                 position = position_dodge(0.2)) + 
+    stat_summary(fun.data = mean_sdl, geom = "errorbar", aes(color = influencedByB),
+                 position = position_dodge(0.2), width = 0.2) + 
+    theme_classic() + ylab('Trust') + xlab('Emoji level') + 
+    ggtitle('Two-Way ANOVA: Trust by Emoji * influencedByB') + theme(plot.title = element_text(hjust = 0.5))  
+    # facet_grid(~mf)
+
+```
