@@ -1,0 +1,326 @@
+---
+title: "Report 090821 female"
+author: "Tom Mushkat"
+date: "08/08/21"
+output:
+  html_document:
+    code_folding: hide
+    df_print: kable
+    results: hide
+    theme: readable
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=FALSE, message=FALSE}
+pacman::p_load(tidyverse, here, anytime, car, effectsize, gmodels, apaTables, psych, rcompanion, ResourceSelection, lmtest, faraway, estimatr, tidymodels, hdm)
+
+Data <- read_csv(here('Data/cleanDataUpdated.csv'))
+
+Data$emCondition <- as.factor(Data$emCondition)
+
+# Data$emCondition <- ordered(Data$emCondition, levels = c('No', 'Single', 'Many'))
+
+Data <- Data %>% 
+  filter(understandPurpse == 'didNotUnderstand')
+# Data <- Data %>%
+#   filter(mf == 'Female')
+```
+
+
+
+
+
+
+
+This is the distribution of the money that was sent to Player B.
+We can see that this is a bi-modal distribution where some of the participants sent the max amount, and some, about 5 cents.
+
+Therefore using K-Means method I split the data into two groups, and performed a logistic regression for predicting the new clusters using the emoji condition.
+
+I also removed participants (N = 33) that by self report indicated that they understood the experiment when Player B sent the message.
+
+```{r, warning=FALSE, message=FALSE}
+hist(Data$Amount)
+hist(Data$Trust)
+```
+
+Using K-Means model I classified the money variable into two groups (Means of 4.70 and 9.82)
+
+```{r, warning=FALSE, message=FALSE}
+set.seed(1)
+Model <- kmeans(x = Data$Amount, centers = 2)
+Model
+Data$clusters <- Model$cluster
+Data$clusters <- ifelse(Data$clusters == 2, 'Sent a little', 'Sent a lot')
+table(Data$clusters)
+Data$clusters <- ifelse(Data$clusters == 'Sent a lot', 1, 0)
+Data$clusters <- as.factor(Data$clusters)
+
+
+set.seed(1)
+Model <- kmeans(x = Data$Trust, centers = 3)
+Model
+Data$clustersTrust <- Model$cluster
+Data$clustersTrust <- ifelse(Data$clustersTrust == 2, 3,
+                             ifelse(Data$clustersTrust == 1, 2, 1))
+table(Data$clustersTrust)
+# Data$clusters <- ifelse(Data$clusters == 'Sent a lot', 1, 0)
+Data$clustersTrust <- as.factor(Data$clustersTrust)
+```
+
+
+
+```{r, warning=FALSE, message=FALSE}
+# Data %>% 
+#   group_by(emCondition, clustersTrust) %>%
+#   summarise(Trust = length(clustersTrust) / nrow(Data)) %>%
+#   mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+#   ggplot(aes(x = emCondition, y = Trust)) +
+#   geom_bar(stat = 'identity') +
+#   scale_y_continuous(labels=scales::percent)
+# 
+# Data %>% 
+#   # group_by(emCondition, mf) %>% 
+#   # summarise(Trust = length(clustersTrust) / nrow(Data)) %>% 
+#   mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+#   ggplot(aes(x = emCondition, y = clustersTrust)) +
+#   geom_bar(aes(y = (..count..) / sum(..count..))) +
+#   scale_y_continuous(labels=scales::percent)
+# 
+# Data %>% 
+#   # group_by(emCondition, mf) %>% 
+#   # summarise(Trust = length(clustersTrust) / nrow(Data)) %>% 
+#   mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+#   ggplot(aes(x = emCondition, y = clustersTrust)) +
+#   geom_bar(aes(y = (..count..) / sum(..count..))) +
+#   scale_y_continuous(labels=scales::percent) +
+#   facet_grid(~mf)
+
+# Trust: 1 = Little, 2 == Medium, 3 == High
+
+Data %>% 
+  group_by(emCondition, mf) %>%
+  summarise(Trust = length(clustersTrust)) %>%
+  # mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>%
+  ggplot(aes(x = emCondition, y = Trust)) +
+  geom_bar(stat = 'identity') +
+  # scale_y_continuous(labels=scales::percent) 
+  facet_grid(~Trust)
+
+# Data %>% 
+#   group_by(emCondition, mf) %>%
+#   summarise(Trust = length(clustersTrust) / nrow(Data)) %>%
+#   mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>%
+#   ggplot(aes(x = emCondition, y = clustersTrust)) +
+#   geom_bar(aes(y = (..count..) / sum(..count..))) +
+#   scale_y_continuous(labels=scales::percent) +
+#   facet_grid(~clustersTrust)
+CrossTable(Data$emCondition, Data$clustersTrust, chisq = T, format = 'SPSS')
+
+
+Data %>% 
+  # group_by(emCondition, mf) %>% 
+  # summarise(Trust = length(clustersTrust) / nrow(Data)) %>% 
+  # mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  ggplot(aes(x = emCondition, y = clustersTrust)) +
+  geom_bar(aes(y = (..count..) / sum(..count..))) +
+  scale_y_continuous(labels=scales::percent) +
+  facet_grid(~mf * clustersTrust)
+CrossTable(Data$emCondition[Data$mf == 'Male'], Data$clustersTrust[Data$mf == 'Male'], chisq = T, format = 'SPSS')
+CrossTable(Data$emCondition[Data$mf == 'Female'], Data$clustersTrust[Data$mf == 'Female'], chisq = T, format = 'SPSS')
+
+# Money: 0 == Little (~5), 1 == High (~10)
+
+Data %>% 
+  # group_by(emCondition, mf) %>% 
+  # summarise(Trust = length(clustersTrust) / nrow(Data)) %>% 
+  # mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  ggplot(aes(x = emCondition, y = clusters)) +
+  geom_bar(aes(y = (..count..) / sum(..count..))) +
+  scale_y_continuous(labels=scales::percent) +
+  facet_grid(~clusters)
+CrossTable(Data$emCondition, Data$clusters, chisq = T, format = 'SPSS')
+
+Data %>% 
+  # group_by(emCondition, mf) %>% 
+  # summarise(Trust = length(clustersTrust) / nrow(Data)) %>% 
+  # mutate(emCondition = ordered(emCondition, levels = c('No', 'Single', 'Many'))) %>% 
+  ggplot(aes(x = emCondition, y = clusters)) +
+  geom_bar(aes(y = (..count..) / sum(..count..))) +
+  scale_y_continuous(labels=scales::percent) +
+  facet_grid(~mf * clusters)
+CrossTable(Data$emCondition[Data$mf == 'Male'], Data$clusters[Data$mf == 'Male'], chisq = T, format = 'SPSS')
+CrossTable(Data$emCondition[Data$mf == 'Female'], Data$clusters[Data$mf == 'Female'], chisq = T, format = 'SPSS')
+
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+library(nnet)
+Data$emCondition <- as.factor(ifelse(Data$emCondition == 'No', 1,
+                                     ifelse(Data$emCondition == 'Single', 2, 3)))
+levels(Data$clustersTrust)
+levels(Data$emCondition)
+No <- c(1, 0, 0)
+Single <- c(0, 1, 0)
+Many <- c(0, 0, 1)
+contrasts(Data$emCondition) <- cbind(Single, Many)
+
+
+
+test <- multinom(clustersTrust ~ emCondition + mf, data = Data)
+summary(test)
+
+z <- summary(test)$coefficients/summary(test)$standard.errors
+z
+
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+p
+```
+
+
+# Univariate correlation
+## Chi-square table (1 == sending large amount of money)
+
+The univariate correlation between the emoji condition and DV was conducted using Chi-Square.
+The results show no significant correlation between the conditions $(X^2(2) = 3.94, p = .14)$. However, we can see that the participants in the single condition (64.29%) sent higher amount of money in comparison with the other conditions (No EM = 55.43%; Multiple EM = 48.61%).
+
+```{r, warning=FALSE, message=FALSE}
+CrossTable(Data$clusters, Data$emCondition, chisq = T, format = 'SPSS')
+```
+
+# Multivaraite correlations
+## Regressions weights: comparing the emoji groups to the no emoji group (No effects)
+
+```{r, warning=FALSE, message=FALSE}
+Data$emCondition <- as.factor(Data$emCondition)
+contrasts(Data$emCondition)
+No <- c(0, 1, 0)
+Single <- c(0, 0, 1)
+Many <- c(1, 0, 0)
+contrasts(Data$emCondition) <- cbind(Single, Many)
+contrasts(Data$emCondition)
+```
+
+### Amount
+A logistic regression model was conducted for predicting the probability to send higher amount of money. The model was conducted while controlling the participants' gender.
+
+The model was significant $(X^2(3) = 7.97, p = .046)$ while explaining 4.24% of the total variance in the amount of money that was sent to Player B.
+The model is well-fit to data $(X^2(8) = 2.72, p = .95)$ while classifying about 58.87% of total observations, with sensitivity of 29.45% and specificity of 73.57%.
+
+After controlling the participants' gender, the model showed no significant correlations between the emoji conditions and the probability to send a large amount of money.
+
+**The model's summary and the Odds ratio with the CI are presented below.**
+
+```{r, warning=FALSE, message=FALSE}
+regLog1 <- glm(clusters ~ emCondition, family = binomial('logit'), data = Data)
+summary(regLog1)
+```
+
+**Odds ratio**
+```{r, warning=FALSE, message=FALSE}
+ORCI <- round(exp(cbind(coef(regLog1), confint(regLog1))), 2) 
+ORCI
+```
+
+### Trust
+Linear regression was performed for predicting the Trust in Player B.
+The regression was performed while controlling gender, religiously, Motives, Attitudes, emoji Use and how much they were positively/negatively influenced by Player's B message (No multicollinearity was found).
+
+The model was significant $(F(8) = 7.04, p < .01)$ while explaining 16.37% of the total variance in the Trust in Player B.
+
+After controlling the control variables, there was found no correlations between the emoji condition and the DV.
+
+**The model's summary and standardized beta coefficients are presented below.**
+
+```{r, warning=FALSE, message=FALSE}
+Model <- lm(Trust ~ emConditionNo+ Secular + Motives + Attitudes + emojiUse + influencedFactors, data = Data) 
+# vif(Model)
+varTest <- bptest(Model)    # lmtest package
+regType <- ifelse(varTest$p.value < 0.05, 'HC2', 'classical')
+
+Model <- lm_robust(Trust ~ emConditionNo + mf + Secular + Motives + Attitudes + emojiUse + influencedFactors, se_type =  regType, data = Data)
+scalednewData <- Data %>% 
+  mutate(Motives = scale(Motives),
+         Attitudes = scale(Attitudes),
+         emojiUse = scale(emojiUse),
+         Trust = scale(Trust))
+
+Model1 <- lm_robust(Trust ~ emConditionNo + mf + Secular + Motives + Attitudes + emojiUse + influencedFactors, se_type = regType, data = scalednewData)
+summary(Model)
+```
+
+**Standardized beta coefficients** 
+```{r, warning=FALSE, message=FALSE}
+round(Model1$coefficients, 2)
+```
+
+## Regression weights: comparing the Single emoji group to the no and multiple emoji groups
+
+```{r, warning=FALSE, message=FALSE}
+Data$emConditionSingle <- Data$emCondition
+# contrasts(Data$emConditionSingle)
+No <- c(1, 0, 0)
+Many <- c(0, 0, 1)
+contrasts(Data$emConditionSingle) <- cbind(No, Many)
+contrasts(Data$emConditionSingle)
+```
+
+### Amount
+
+A logistic regression model was conducted for predicting the probability to send higher amount of money. The model was conducted while controlling the participants' gender.
+
+The model was significant $(X^2(3) = 7.97, p = .046)$ while explaining 4.24% of the total variance in the amount of money that was sent to Player B.
+The model is well-fit to data $(X^2(8) = 2.72, p = .95)$ while classifying about 58.87% of total observations, with sensitivity of 29.45% and specificity of 73.57%.
+
+After controlling the participants' gender and perceived influence, the model showed a weak but significant negative correlation between the multiple emoji condition and the probability to send a large amount of money $(OR = 0.52, CI[0.27, 0.99], p = .047)$. Meaning, receiving a message with multiple emojis, in comparison with a single emoji, decreases the probability to send a large amount of money. 
+
+**The model's summary and the Odds ratio with the CI are presented below.**
+
+```{r, warning=FALSE, message=FALSE}
+regLog1 <- glm(clusters ~ emConditionSingle, family = binomial('logit'), data = Data)
+summary(regLog1)
+```
+
+**Odds ratio**
+```{r, warning=FALSE, message=FALSE}
+ORCI <- round(exp(cbind(coef(regLog1), confint(regLog1))), 2) 
+ORCI
+```
+
+### Trust
+Linear regression was performed for predicting the Trust in Player B.
+The regression was performed while controlling gender, religiously, Motives, Attitudes, emoji Use and how much they were positively/negatively influenced by Player's B message (No multicollinearity was found).
+
+The model was significant $(F(8) = 7.04, p < .01)$ while explaining 16.37% of the total variance in the Trust in Player B.
+
+After controlling the control variables, there was found no correlations between the emoji condition and the DV.
+
+**The model's summary and standardized beta coefficients are presented below.**
+
+```{r, warning=FALSE, message=FALSE}
+Model <- lm(Trust ~ emConditionSingle + mf + Secular + Motives + Attitudes + emojiUse + influencedFactors, data = Data) 
+# vif(Model)
+varTest <- bptest(Model)    # lmtest package
+regType <- ifelse(varTest$p.value < 0.05, 'HC2', 'classical')
+
+Model <- lm_robust(Trust ~ emConditionSingle + mf + Secular + Motives + Attitudes + emojiUse + influencedFactors, se_type =  regType, data = Data)
+scalednewData <- Data %>% 
+  mutate(Motives = scale(Motives),
+         Attitudes = scale(Attitudes),
+         emojiUse = scale(emojiUse),
+         Trust = scale(Trust))
+
+Model1 <- lm_robust(Trust ~ emConditionSingle + mf + Secular + Motives + Attitudes + emojiUse + influencedFactors, se_type = regType, data = scalednewData)
+summary(Model)
+```
+
+**Standardized beta coefficients** 
+```{r, warning=FALSE, message=FALSE}
+round(Model1$coefficients, 2)
+```

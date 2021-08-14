@@ -10,9 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Performing the model
-Using the **glm** command we can perform a logistic regression
 ```{r, warning=FALSE, message=FALSE}
-
 Model <- kmeans(x = Data$Amount, centers = 2)
 Model
 Data$clusters <- Model$cluster
@@ -29,7 +27,26 @@ contrasts(Data$emConditionOneWayTrust)
 EMvsNoEM <- c(0, 1, 0)
 ManyVSSingle <- c(1, 0, 0)
 contrasts(Data$emConditionOneWayTrust) <- cbind(EMvsNoEM, ManyVSSingle)
+```
 
+This is the distribution of the money that was sent to Player B.
+We can see that some of the participants sent the max amount, and some, about 5 cents.
+
+Therefore using K-Means method I split the data into two groups. and performed logistic regression for predicting the new clusters using the emoji condition.
+The regression was conducted while controlling the Gender.
+```{r, warning=FALSE, message=FALSE}
+hist(Data$Amount)
+```
+
+# Performing logistic regression for predicting 
+
+The model was significant $(X^2(3) = 11.42, p < .01)$ while explaining 5.34% of the total variance in the Trust in Player B.
+The model is well-fit to data $(X^2(8) = 0.64, p = .99)$ while classifying about 60.5% of total observations, with sensitivity of 68.82% and specificity of 43.44%.
+Aftter controlling the participants' gender, the model showed that the use of a single emoji is positively correlated with an increase of money sending, in comparison with many emojis. ($OR = 1.98, CI[1.10, 3.61], p = .02)$,
+The summary of the model and the Odds ratio with the CI are presented below
+
+
+```{r, warning=FALSE, message=FALSE}
 regLog1 <- glm(clusters ~ emConditionOneWayAmount + mf, family = binomial('logit'), data = Data)
 summary(regLog1)
 ```
@@ -177,5 +194,4 @@ scalednewData <- Data %>%
 
 Model1 <- lm_robust(Trust ~ emConditionOneWayAmount + mf + Secular + Motives + Attitudes + emojiUse, se_type = regType, data = scalednewData) # estimatr package
 summary(Model1)
-
 ```

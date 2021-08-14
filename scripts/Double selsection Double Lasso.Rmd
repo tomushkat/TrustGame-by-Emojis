@@ -1,0 +1,134 @@
+---
+title: "Double selsection Double Lasso"
+author: "Tom Mushkat"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: kable
+    results: hide
+    theme: readable
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# One condition
+
+```{r, warning=FALSE, message=FALSE}
+lassoData <- Data %>% 
+  select(Trust, Age, mf, Secular, Parent, Motives, Attitudes, emojiUse) %>% 
+    mutate(mf = ifelse(mf == 'Male', 1, 0),
+           Parent = ifelse(Parent == 'Yes', 1, 0),
+           Secular = ifelse(Secular == 'Secular', 1, 0),
+           )
+
+emConditionOneWayAmount <- Data %>% 
+  select(emCondition) %>%
+  mutate(emCondition = ifelse(emCondition == 'No', 0,
+                              ifelse(emCondition == 'Single', 1, 2))) %>% 
+  mutate(emCondition = as.factor(emCondition))
+```
+
+```{r, warning=FALSE, message=FALSE}
+Quality_rec1 <-
+    recipe(Trust ~ ., data = lassoData) %>%
+    # step_dummy(Gender, Secular, Parent) %>% 
+    step_interact(terms = ~ all_predictors() * all_predictors()) %>%
+    step_poly(Age, Motives, Attitudes, emojiUse) %>%
+    step_center(all_predictors()) %>%
+    step_scale(all_predictors()) %>%
+    step_zv(all_predictors())
+  
+  Prep1 <- prep(Quality_rec1)
+  
+  Juiced1 <- juice(Prep1)
+  Juiced2 <- cbind(Juiced1, emConditionOneWayAmount)
+```
+
+
+
+### All participants code.
+```{r, warning=FALSE, message=FALSE}
+D1 <- emConditionOneWayAmount # Causes
+W1 <- as.matrix(Juiced2[, c(2:ncol(Juiced2))]) # Controls
+X1 <- as.matrix(cbind(D1, W1)) # Regressors
+Y1 <- as.matrix(Juiced2$Trust) #Outcome
+set.seed(1)
+Model.4.1 <- rlassoEffects(X1, Y1, index = c(1), method = "double selection", joint = TRUE)
+```
+
+**Model summary**
+```{r, warning=FALSE, message=FALSE}
+summary(Model.4.1)
+```
+
+**Odds Ratio**
+```{r, warning=FALSE, message=FALSE}
+ORCI <- round(exp(cbind(coef(Model.4.1), confint(Model.4.1))), 2) 
+ORCI
+```
+
+
+
+
+# One condition
+
+```{r, warning=FALSE, message=FALSE}
+lassoLogitData <- Data %>% 
+  select(clusters, Age, mf, Secular, Parent, Motives, Attitudes, emojiUse) %>% 
+    mutate(mf = ifelse(mf == 'Male', 1, 0),
+           Parent = ifelse(Parent == 'Yes', 1, 0),
+           Secular = ifelse(Secular == 'Secular', 1, 0),
+           )
+
+emConditionOneWayAmount <- Data %>% 
+  select(emCondition) %>%
+  mutate(emCondition = ifelse(emCondition == 'No', 0,
+                              ifelse(emCondition == 'Single', 1, 2))) %>% 
+  mutate(emCondition = as.factor(emCondition))
+```
+
+```{r, warning=FALSE, message=FALSE}
+Quality_rec1 <-
+    recipe(clusters ~ ., data = lassoLogitData) %>%
+    # step_dummy(Gender, Secular, Parent) %>% 
+    step_interact(terms = ~ all_predictors() * all_predictors()) %>%
+    step_poly(Age, Motives, Attitudes, emojiUse) %>%
+    step_center(all_predictors()) %>%
+    step_scale(all_predictors()) %>%
+    step_zv(all_predictors())
+  
+  Prep1 <- prep(Quality_rec1)
+  
+  Juiced1 <- juice(Prep1)
+  Juiced2 <- cbind(Juiced1, emConditionOneWayAmount)
+  
+  
+```
+
+
+
+### All participants code.
+```{r, warning=FALSE, message=FALSE}
+D1 <- emConditionOneWayAmount # Causes
+W1 <- as.matrix(Juiced2[, c(2:ncol(Juiced2))]) # Controls
+X1 <- as.matrix(cbind(D1, W1)) # Regressors
+Y1 <- as.matrix(Juiced2$clusters) #Outcome
+set.seed(1)
+Model.4.2 <- rlassoEffects(X1, Y1, index = c(1), method = "double selection", joint = TRUE)
+```
+
+**Model summary**
+```{r, warning=FALSE, message=FALSE}
+summary(Model.4.2)
+```
+
+**Odds Ratio**
+```{r, warning=FALSE, message=FALSE}
+ORCI <- round(exp(cbind(coef(Model.4.2), confint(Model.4.2))), 2) 
+ORCI
+```

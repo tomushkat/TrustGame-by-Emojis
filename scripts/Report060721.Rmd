@@ -17,9 +17,34 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, warning=FALSE, message=FALSE}
-pacman::p_load(tidyverse, here, skimr, anytime, car, effectsize, gmodels, apaTables, psych)
+pacman::p_load(tidyverse, here, skimr, anytime, car, effectsize, gmodels, apaTables, psych, rcompanion, ResourceSelection, lmtest, faraway, estimatr, tidymodels, hdm)
 
 Data <- read_csv(here('Data/cleanDataUpdated.csv'))
+
+Data$emCondition <- as.factor(Data$emCondition)
+levels(Data$emCondition)
+contrasts(Data$emCondition)
+# Data %>% 
+#   group_by(emCondition) %>% 
+#   summarise(m = mean(Trust)) 
+# summary(lm(Trust ~ emCondition, data = Data))
+
+Data$emCondition <- ordered(Data$emCondition, levels = c('No', 'Single', 'Many'))
+# Data %>% 
+#   group_by(emCondition) %>% 
+#   summarise(m = mean(Trust)) 
+
+Single <- c(0, 1, 0)
+Many <- c(0, 0, 1)
+contrasts(Data$emCondition) <- cbind(Single, Many)
+# summary(lm(Trust ~ emCondition, data = Data))
+
+# newData <- Data %>% filter(understandPurpse != 'didNotUnderstand')
+# nrow(newData)
+
+Data <- Data %>% 
+  filter(understandPurpse == 'didNotUnderstand')
+
 ```
 
 # Correlation between the DVs
@@ -562,4 +587,87 @@ Data %>%
     ggtitle('Two-Way ANOVA: Trust by Emoji * influencedByB') + theme(plot.title = element_text(hjust = 0.5))  
     # facet_grid(~mf)
 
+```
+
+# Logistic regression for predicting the Amount
+
+## Performing the model
+```{r, warning=FALSE, message=FALSE}
+Model <- kmeans(x = Data$Amount, centers = 2)
+Model
+Data$clusters <- Model$cluster
+Data$clusters <- ifelse(Data$clusters == 2, 1, 0)
+Data$clusters <- as.factor(Data$clusters)
+```
+
+This is the distribution of the money that was sent to Player B.
+We can see that some of the participants sent the max amount, and some, about 5 cents.
+
+Therefore using K-Means method I split the data into two groups. and performed logistic regression for predicting the new clusters using the emoji condition.
+The regression was conducted while controlling the Gender.
+```{r, warning=FALSE, message=FALSE}
+hist(Data$Amount)
+```
+
+# Performing logistic regression for predicting 
+
+The model was significant $(X^2(3) = 11.42, p < .01)$ while explaining 5.34% of the total variance in the Trust in Player B.
+The model is well-fit to data $(X^2(8) = 0.64, p = .99)$ while classifying about 60.5% of total observations, with sensitivity of 68.82% and specificity of 43.44%.
+After controlling the participants' gender, the model showed a negative correlation between the use of multiple emoji and money sending ($OR = 0.50, CI[0.28, 0.91], p = .02)$. Meaning, the participants in the multiple emoji condition, sent less money to Player B in comparison with the participants in the Single emoji condition.
+The summary of the model and the Odds ratio with the CI are presented below.
+
+```{r, warning=FALSE, message=FALSE}
+regLog1 <- glm(clusters ~ emCondition + mf + influencedFactors, family = binomial('logit'), data = Data)
+summary(regLog1)
+
+Data %>%
+  ggplot(aes(x = emCondition, y = Clusters)) +
+  geom_bar(aes(y = (..count..) / sum(..count..), fill = emCondition)) + 
+          scale_y_continuous(labels = scales::percent) +
+   geom_text(aes( label = scales::percent(..prop..),
+                   y = ..prop.. ), stat = "count", vjust = -.5) +
+  ylab("Relative frequencies") + theme_classic() + 
+  scale_y_continuous(labels = scales::percent) 
+  # facet_grid(~clusters ) +
+  ylim(0, 0.50)
+  
+
+  CrossTable(Data$clusters, Data$emCondition, chisq = T, format = 'SPSS')
+```
+
+## Odss ratio
+Extracting the odds ratio
+```{r, warning=FALSE, message=FALSE}
+ORCI <- round(exp(cbind(coef(regLog1), confint(regLog1))), 2) 
+ORCI
+```
+
+# LM for predicting the Trust
+Linear regression was performed for predicting the Trust in Player B.
+The regression was performed while controlling gender, religiously, Motives, Attitudes and emoji Use (No multicollinearity was found).
+The model was significant $(F(7) = 3.75, p < .01)$ while explaining 6.4% of the total variance in the Trust in Player B.
+After controlling the control variables, there was found no correlations between 
+## Performing linear regression
+
+```{r, warning=FALSE, message=FALSE}
+Model <- lm(Trust ~ emCondition + mf + Secular + Motives + Attitudes + emojiUse + influencedFactors, data = Data) 
+vif(Model)
+varTest <- bptest(Model)    # lmtest package
+regType <- ifelse(varTest$p.value < 0.05, 'HC2', 'classical')
+
+Model <- lm_robust(Trust ~ emCondition + mf + Secular + Motives + Attitudes + emojiUse + influencedFactors, se_type =  regType, data = Data)
+
+summary(Model)
+```
+
+### Standerlized beta coeff 
+```{r, warning=FALSE, message=FALSE}
+scalednewData <- Data %>% 
+  mutate(Motives = scale(Motives),
+         Attitudes = scale(Attitudes),
+         emojiUse = scale(emojiUse),
+         Trust = scale(Trust))
+
+Model1 <- lm_robust(Trust ~ emCondition + mf + Secular + Motives + Attitudes + emojiUse + influencedFactors, se_type = regType, data = scalednewData) # estimatr package
+summary(Model1)
 ```

@@ -21,7 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, warning=FALSE, message=FALSE}
 
 Data$emConditionOneWayAmount <- as.factor(Data$emCondition)
-contrasts(Data$emConditionOneWayAmount)
+contrasts(Data$emCondition)
 EMvsNoEM <- c(0.5, -1, 0.5)
 ManyVSSingle <- c(0.5, 0, -0.5)
 contrasts(Data$emConditionOneWayAmount) <- cbind(EMvsNoEM, ManyVSSingle)
@@ -49,11 +49,11 @@ Data %>%
   summarise(Mean = round(mean(Amount), 2),
             SD   = round(sd(Amount), 2))
 
-Leven <- leveneTest(Data$Amount[Data$Order == 'amountFirst'] ~ Data$emConditionOneWayAmount[Data$Order == 'amountFirst'])  # car packages
-Leven <- leveneTest(Data$Amount ~ Data$emConditionOneWayAmount)  # car packages
+Leven <- leveneTest(Data$Amount[Data$Order == 'amountFirst'] ~ Data$emCondition[Data$Order == 'amountFirst'])  # car packages
+# Leven <- leveneTest(Data$Amount ~ Data$emCondition)  # car packages
 
 trueVarTest <- ifelse(Leven$`Pr(>F)`[1] < 0.05, TRUE, FALSE)
-Model <- aov(Amount ~ emConditionOneWayAmount , data = Data)
+Model <- aov(Amount ~ emCondition , data = Data)
 Anova(Model, type = 'III', white.adjust = trueVarTest)
 
 summary.lm(Model)

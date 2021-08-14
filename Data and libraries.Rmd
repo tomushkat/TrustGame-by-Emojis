@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, warning=FALSE, message=FALSE}
-pacman::p_load(tidyverse, here, skimr, anytime, car, effectsize, gmodels, apaTables, psych, rcompanion, ResourceSelection, lmtest, faraway, estimatr)
+pacman::p_load(tidyverse, here, skimr, anytime, car, effectsize, gmodels, apaTables, psych, rcompanion, ResourceSelection, lmtest, faraway, estimatr, tidymodels, hdm)
 
  # Male <- read_csv(here('Data/maleData.csv'))
  # Female <- read_csv(here('Data/femaleData.csv'))
@@ -40,9 +40,32 @@ pacman::p_load(tidyverse, here, skimr, anytime, car, effectsize, gmodels, apaTab
          
 # write.csv(Data, 'cleanDataUpdated.csv')
 Data <- read_csv(here('Data/cleanDataUpdated.csv'))
+
+Data$emCondition <- as.factor(Data$emCondition)
+levels(Data$emCondition)
+contrasts(Data$emCondition)
+Data %>% 
+  group_by(emCondition) %>% 
+  summarise(m = mean(Trust)) 
+# summary(lm(Trust ~ emCondition, data = Data))
+
+Data$emCondition <- ordered(Data$emCondition, levels = c('No', 'Single', 'Many'))
+contrasts(Data$emCondition)
+Data %>% 
+  group_by(emCondition) %>% 
+  summarise(m = mean(Trust)) 
+
+# Single <- c(0, 1, 0)
+No <- c(1, 0, 0)
+Many <- c(0, 0, 1)
+contrasts(Data$emCondition) <- cbind(No, Many)
+# summary(lm(Trust ~ emCondition, data = Data))
+
 # newData <- Data %>% filter(understandPurpse != 'didNotUnderstand')
 # nrow(newData)
 
+Data <- Data %>% 
+  filter(understandPurpse == 'didNotUnderstand')
 ```
 
 ```{r, warning=FALSE, message=FALSE}
